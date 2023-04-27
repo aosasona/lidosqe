@@ -1,0 +1,12 @@
+version: "3.9"
+
+services:
+  main:
+    build:
+      context: .
+    environment:
+      - APP_NAME="main"
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - /dev/fuse

@@ -1,0 +1,8 @@
+fuse:
+  dir: /litefs
+
+data:
+  dir: "/var/lib/litefs"
+
+lease:
+  type: "static"
