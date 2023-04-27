@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -22,6 +23,12 @@ const (
 )
 
 type Args []interface{}
+type QueryType string
+
+const (
+	QUERY_SELECT QueryType = "select"
+	QUERY_EXEC   QueryType = "exec"
+)
 
 type SQLQuery struct {
 	Query string `json:"sql"`
@@ -29,12 +36,14 @@ type SQLQuery struct {
 }
 
 type SQLQueryResult struct {
+	Type QueryType                `json:"query_type"`
 	Data []map[string]interface{} `json:"data"`
 }
 
 type SQLExecResult struct {
-	LastInsertID int64 `json:"last_insert_id"`
-	RowsAffected int64 `json:"rows_affected"`
+	Type         QueryType `json:"query_type"`
+	LastInsertID int64     `json:"last_insert_id"`
+	RowsAffected int64     `json:"rows_affected"`
 }
 
 type SQLError struct {
@@ -43,7 +52,7 @@ type SQLError struct {
 }
 
 type Response struct {
-	Result any       `json:"result,omitempty"`
+	Result any       `json:"data,omitempty"`
 	Error  *SQLError `json:"error,omitempty"`
 	Ok     bool      `json:"ok"`
 }
@@ -59,6 +68,8 @@ func init() {
 func main() {
 	defer db.Close()
 	router := chi.NewRouter()
+
+	router.Use(cors.AllowAll().Handler)
 
 	router.Post("/query", queryHandler)
 	router.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
@@ -163,11 +174,13 @@ func queryHandler(w http.ResponseWriter, r *http.Request) {
 			result = append(result, row)
 		}
 
+		data := new(SQLQueryResult)
+		data.Data = result
+		data.Type = QUERY_SELECT
+
 		encodeJSON(w, Response{
-			Result: &SQLQueryResult{
-				Data: result,
-			},
-			Ok: true,
+			Result: data,
+			Ok:     true,
 		})
 		return
 	}
@@ -188,9 +201,10 @@ func queryHandler(w http.ResponseWriter, r *http.Request) {
 		data := new(SQLExecResult)
 		data.LastInsertID, _ = result.LastInsertId()
 		data.RowsAffected, _ = result.RowsAffected()
+		data.Type = QUERY_EXEC
 
 		encodeJSON(w, Response{
-			Result: data,
+			Result: map[string]any{"data": data, "type": QUERY_EXEC},
 			Ok:     true,
 		})
 		return
@@ -234,6 +248,11 @@ func decodeJSON(r *http.Request, v interface{}) error {
 	return json.NewDecoder(r.Body).Decode(v)
 }
 
-func encodeJSON(w http.ResponseWriter, v interface{}) error {
+func encodeJSON(w http.ResponseWriter, v Response) error {
+	code := 200
+	if v.Error != nil {
+		code = v.Error.Code
+	}
+	w.WriteHeader(code)
 	return json.NewEncoder(w).Encode(v)
 }

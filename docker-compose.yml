@@ -4,6 +4,7 @@ services:
   main:
     build:
       context: .
+      dockerfile: litefs.Dockerfile
     environment:
       - APP_NAME="main"
     cap_add:
