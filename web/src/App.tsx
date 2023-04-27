@@ -66,8 +66,6 @@ function App() {
 		e.preventDefault();
 		if (input === "" || !input?.endsWith(";")) return;
 		let currentSQL = input;
-		setHistory((prev) => [...prev, { type: "input", value: input }]);
-		setInput("");
 
 		if (currentSQL.endsWith(";")) {
 			currentSQL = currentSQL.slice(0, -1);
@@ -79,7 +77,10 @@ function App() {
 		args = args.map((arg) => arg.trim());
 
 		const query: Query = { sql, args };
-		return handleQuery(query);
+		handleQuery(query);
+
+		setHistory((prev) => [...prev, { type: "input", value: input }]);
+		setInput("");
 	}
 
 	function handleQuery(query: Query) {
@@ -100,14 +101,13 @@ function App() {
 				if (e?.response) {
 					return setHistory((prev) => [...prev, { type: "error", value: "error: " + e.response.data.error.message }]);
 				}
-
 				return setHistory((prev) => [...prev, { type: "error", value: "Something went wrong" }]);
 			});
 	}
 
 	return (
 		<main className="w-screen h-screen bg-black flex flex-col items-center justify-center">
-			<div className="h-5/6 w-[80vw] bg-zinc-900/80 space-y-1 rounded-lg overflow-x-hidden p-6" ref={terminalRef}>
+			<div className="h-5/6 w-[90vw] bg-zinc-900/60 space-y-2 rounded-lg overflow-x-hidden p-6" ref={terminalRef}>
 				{history.map((item, index) => (
 					<HistoryLog key={index} item={item} setInput={setInput} />
 				))}
@@ -122,7 +122,7 @@ function App() {
 					/>
 				</form>
 			</div>
-			<button className="text-red-400 hover:opacity-50 transition-all py-2 px-4" onClick={() => setHistory([])}>
+			<button className="text-red-500 hover:opacity-50 transition-all py-2 px-4 mt-4" onClick={() => setHistory([])}>
 				clear console
 			</button>
 		</main>
@@ -133,7 +133,7 @@ function HistoryLog({ item, setInput }: { item: History; setInput: (value: strin
 	return (
 		<div className="flex items-center gap-2">
 			{item.type == "input" ? (
-				<button onClick={() => setInput(item.value)}>
+				<button onClick={() => setInput(item.value)} className="focus:outline-none">
 					<IoChevronForwardSharp className="inline-block text-sm text-zinc-500 hover:text-zinc-100 hover:translate-x-1 transition-all" />
 				</button>
 			) : null}
