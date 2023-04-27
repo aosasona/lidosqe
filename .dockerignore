@@ -1,0 +1,4 @@
+# flyctl launch added from web/.gitignore
+# Logs
+web
+scripts
